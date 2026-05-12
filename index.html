@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蓝牙聊天室9</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-right: 1px solid #e9ecef;
+        }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .devices-list {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .device-item {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .device-item:hover {
+            background: #f8f9fa;
+        }
+
+        .device-item.active {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+        }
+
+        .device-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .device-id {
+            font-size: 0.8em;
+            color: #6c757d;
+            font-family: monospace;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dc3545;
+        }
+
+        .status-dot.connected {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .messages {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            max-width: 70%;
+        }
+
+        .message.sent {
+            margin-left: auto;
+        }
+
+        .message-content {
+            padding: 12px 18px;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .message.sent .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-top-right-radius: 5px;
+        }
+
+        .message.received .message-content {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-top-left-radius: 5px;
+        }
+
+        .message-sender {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .message-time {
+            font-size: 0.7em;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .message.sent .message-time {
+            text-align: right;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            padding: 0 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        .notification.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .notification.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .notification.info {
+            border-left: 4px solid #17a2b8;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .control-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔵 蓝牙聊天室</h1>
+            <p>基于Web Bluetooth API的跨设备即时通讯</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="control-panel">
+                    <button class="btn" id="connectBtn">
+                        <span>🔌</span> 连接设备
+                    </button>
+                    <button class="btn" id="discoverBtn">
+                        <span>🔍</span> 扫描设备
+                    </button>
+                    <button class="btn btn-secondary" id="clearBtn">
+                        <span>🗑️</span> 清空聊天
+                    </button>
+                </div>
+
+                <div class="devices-list" id="devicesList">
+                    <div class="device-item">
+                        <div class="device-name">点击"扫描设备"开始</div>
+                        <div class="device-id">等待设备扫描...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-area">
+                <div class="status-bar">
+                    <div class="status">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">未连接</span>
+                    </div>
+                    <div id="deviceInfo">设备: 无</div>
+                </div>
+
+                <div class="messages" id="messagesContainer">
+                    <div class="message received">
+                        <div class="message-sender">系统</div>
+                        <div class="message-content">
+                            欢迎使用蓝牙聊天室！<br>
+                            1. 点击"扫描设备"查找附近的蓝牙设备<br>
+                            2. 从列表中选择要连接的设备<br>
+                            3. 开始聊天
+                        </div>
+                        <div class="message-time" id="currentTime"></div>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <input type="text" class="message-input" id="messageInput" placeholder="输入消息..." disabled>
+                    <button class="send-btn" id="sendBtn" disabled>发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+    <script>
+        class BluetoothChatApp {
+            constructor() {
+                this.device = null;
+                this.server = null;
+                this.service = null;
+                this.txCharacteristic = null;
+                this.rxCharacteristic = null;
+                this.connected = false;
+                this.messages = [];
+
+                // ============== 关键修改：使用标准Nordic UART Service ==============
+                this.SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+                this.TX_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';  // 发送
+                this.RX_CHARACTERISTIC_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';  // 接收
+                // ==================================================================
+
+                this.role = 'client'; // 'client' 或 'server'，客户端连接服务器
+                this.init();
+            }
+
+            init() {
+                // 初始化UI事件
+                document.getElementById('connectBtn').addEventListener('click', () => this.connect());
+                document.getElementById('discoverBtn').addEventListener('click', () => this.discover());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clearChat());
+                document.getElementById('sendBtn').addEventListener('click', () => this.sendMessage());
+                document.getElementById('messageInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+
+                // 添加角色选择按钮
+                this.createRoleSelector();
+
+                // 显示当前时间
+                this.updateTime();
+                setInterval(() => this.updateTime(), 60000);
+
+                // 检查浏览器支持
+                this.checkBrowserSupport();
+            }
+
+            createRoleSelector() {
+                const controlPanel = document.querySelector('.control-panel');
+                const roleHtml = `
+                    <div style="grid-column: span 3; margin-top: 10px; display: flex; gap: 10px;">
+                        <label style="display: flex; align-items: center;">
+                            <input type="radio" name="role" value="client" checked> 客户端（主动连接）
+                        </label>
+                        <label style="display: flex; align-items: center;">
+                            <input type="radio" name="role" value="server"> 服务器（等待连接）
+                        </label>
+                    </div>
+                `;
+                controlPanel.insertAdjacentHTML('beforeend', roleHtml);
+
+                // 监听角色变化
+                document.querySelectorAll('input[name="role"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        this.role = e.target.value;
+                        this.updateUIForRole();
+                    });
+                });
+
+                this.updateUIForRole();
+            }
+
+            updateUIForRole() {
+                const discoverBtn = document.getElementById('discoverBtn');
+                const connectBtn = document.getElementById('connectBtn');
+
+                if (this.role === 'server') {
+                    discoverBtn.disabled = true;
+                    discoverBtn.innerHTML = '<span>📡</span> 等待连接中...';
+                    this.startAdvertising(); // 服务器模式：开始广播
+                } else {
+                    discoverBtn.disabled = false;
+                    discoverBtn.innerHTML = '<span>🔍</span> 扫描设备';
+                    this.stopAdvertising(); // 客户端模式：停止广播
+                }
+            }
+
+            // 服务器模式：广播服务（注意：这个API支持度有限）
+            async startAdvertising() {
+                if (!navigator.bluetooth || !navigator.bluetooth.getAvailability) {
+                    return;
+                }
+
+                try {
+                    // 注意：Web Bluetooth的广播API支持度较低
+                    const available = await navigator.bluetooth.getAvailability();
+                    if (available) {
+                        this.showNotification('服务器模式已启动，等待客户端连接...', 'info');
+                    }
+                } catch (error) {
+                    console.log('广播API不支持:', error);
+                    this.showNotification('当前浏览器不支持服务器模式，请使用客户端模式', 'warning');
+                }
+            }
+
+            stopAdvertising() {
+                // 如果有广播，停止它
+            }
+
+            checkBrowserSupport() {
+                if (!navigator.bluetooth) {
+                    this.showNotification('您的浏览器不支持Web Bluetooth API。请使用Chrome 89+、Edge 89+或Android Chrome 89+。', 'error');
+                    document.querySelectorAll('.btn').forEach(btn => btn.disabled = true);
+                    return false;
+                }
+                return true;
+            }
+
+            updateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                document.querySelectorAll('#currentTime').forEach(el => {
+                    el.textContent = timeString;
+                });
+            }
+
+            async discover() {
+                if (!this.checkBrowserSupport()) return;
+
+                if (this.role === 'server') {
+                    this.showNotification('服务器模式下无需扫描设备', 'info');
+                    return;
+                }
+
+                try {
+                    this.showNotification('正在扫描附近的蓝牙设备...', 'info');
+
+                    // ============ 关键修改：过滤掉 HSJ_LOCK 设备 ============
+                    this.device = await navigator.bluetooth.requestDevice({
+                        // 方案1：接收所有设备，但在UI中过滤显示
+                        acceptAllDevices: true,
+                        optionalServices: [this.SERVICE_UUID],
+                    });
+
+                    if (!this.device) {
+                        this.showNotification('未选择任何设备', 'info');
+                        return;
+                    }
+
+                    // 检查是否选择了要过滤的设备
+                    if (this.device.name && this.device.name.includes('HSJ_LOCK')) {
+                        this.showNotification('已过滤掉 HSJ_LOCK 设备，请重新选择', 'info');
+                        return; // 重新扫描
+                    }
+
+                    this.updateDeviceList([this.device]);
+                    this.showNotification('已选择设备: ' + (this.device.name || '未知设备'), 'success');
+
+                } catch (error) {
+                    console.error('扫描错误详情:', error);
+
+                    if (error.name === 'NotFoundError') {
+                        this.showNotification('未发现蓝牙设备，请检查：\n1. 蓝牙已开启\n2. 设备处于可发现状态\n3. 距离不要太远', 'info');
+                    } else if (error.name === 'SecurityError') {
+                        this.showNotification('需要蓝牙权限，请允许浏览器访问蓝牙', 'error');
+                    } else if (error.name === 'NotAllowedError') {
+                        this.showNotification('用户取消了设备选择', 'info');
+                    } else if (error.name === 'NetworkError') {
+                        this.showNotification('网络错误，请重启蓝牙后重试', 'error');
+                    } else {
+                        this.showNotification('扫描失败: ' + error.message, 'error');
+                    }
+                }
+            }
+            updateDeviceList(devices) {
+                const devicesList = document.getElementById('devicesList');
+                devicesList.innerHTML = '';
+
+                // 过滤掉 HSJ_LOCK 设备
+                const filteredDevices = devices.filter(device => {
+                    const deviceName = device.name || '';
+                    return !deviceName.includes('HSJ_LOCK');
+                });
+
+                if (filteredDevices.length === 0) {
+                    devicesList.innerHTML = `
+            <div class="device-item">
+                <div class="device-name">未发现可用设备</div>
+                <div class="device-id">已过滤掉 HSJ_LOCK 设备</div>
+            </div>
+        `;
+                    return;
+                }
+
+                filteredDevices.forEach(device => {
+                    const deviceElement = document.createElement('div');
+                    deviceElement.className = 'device-item';
+                    deviceElement.innerHTML = `
+            <div class="device-name">${device.name || '未知设备'}</div>
+            <div class="device-id">${device.id}</div>
+        `;
+                    deviceElement.addEventListener('click', () => this.connectToDevice(device));
+                    devicesList.appendChild(deviceElement);
+                });
+            }
+
+            async connect() {
+                if (this.role === 'server') {
+                    this.showNotification('服务器模式下等待客户端连接', 'info');
+                    return;
+                }
+
+                if (!this.device) {
+                    this.showNotification('请先扫描设备', 'info');
+                    return;
+                }
+
+                await this.connectToDevice(this.device);
+            }
+
+            async connectToDevice(device) {
+                try {
+                    this.showNotification('正在连接...', 'info');
+
+                    this.server = await device.gatt.connect();
+                    this.showNotification('GATT连接成功', 'success');
+
+                    // 监听断开事件
+                    device.addEventListener('gattserverdisconnected', () => {
+                        this.onDisconnected();
+                    });
+
+                    // 发现服务
+                    this.service = await this.server.getPrimaryService(this.SERVICE_UUID);
+                    this.showNotification('服务发现成功', 'success');
+
+                    // 获取特征
+                    this.txCharacteristic = await this.service.getCharacteristic(this.TX_CHARACTERISTIC_UUID);
+                    this.rxCharacteristic = await this.service.getCharacteristic(this.RX_CHARACTERISTIC_UUID);
+                    this.showNotification('特征获取成功', 'success');
+
+                    // 订阅接收特征
+                    await this.rxCharacteristic.startNotifications();
+                    this.rxCharacteristic.addEventListener('characteristicvaluechanged',
+                        (event) => this.onCharacteristicValueChanged(event));
+
+                    this.setConnected(true, device);
+                    this.showNotification('蓝牙聊天已连接！可以发送消息了', 'success');
+
+                } catch (error) {
+                    console.error('连接失败详情:', error);
+                    let errorMsg = '连接失败: ' + error.message;
+
+                    if (error.message.includes('not found')) {
+                        errorMsg = '未找到指定的蓝牙服务。请确保：1.设备支持Nordic UART服务 2.设备已正确编程';
+                    } else if (error.message.includes('GATT')) {
+                        errorMsg = 'GATT服务错误。请重启设备蓝牙后重试';
+                    }
+
+                    this.showNotification(errorMsg, 'error');
+                    this.setConnected(false);
+                }
+            }
+
+            onCharacteristicValueChanged(event) {
+                const value = event.target.value;
+                const decoder = new TextDecoder('utf-8');
+                const message = decoder.decode(value);
+
+                this.addMessage(message, 'received', '远程设备');
+            }
+
+            async sendMessage() {
+                const input = document.getElementById('messageInput');
+                const message = input.value.trim();
+
+                if (!message || !this.txCharacteristic) {
+                    return;
+                }
+
+                try {
+                    const encoder = new TextEncoder('utf-8');
+                    const data = encoder.encode(message);
+
+                    await this.txCharacteristic.writeValueWithResponse(data);
+
+                    this.addMessage(message, 'sent', '我');
+                    input.value = '';
+                    input.focus();
+
+                } catch (error) {
+                    this.showNotification('发送失败: ' + error.message, 'error');
+                }
+            }
+
+            addMessage(text, type, sender) {
+                const messagesContainer = document.getElementById('messagesContainer');
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${type}`;
+                messageElement.innerHTML = `
+                    <div class="message-sender">${sender}</div>
+                    <div class="message-content">${this.escapeHtml(text)}</div>
+                    <div class="message-time">${timeString}</div>
+                `;
+
+                messagesContainer.appendChild(messageElement);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                this.messages.push({ text, type, sender, time: timeString });
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            setConnected(connected, device = null) {
+                this.connected = connected;
+
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+                const deviceInfo = document.getElementById('deviceInfo');
+                const messageInput = document.getElementById('messageInput');
+                const sendBtn = document.getElementById('sendBtn');
+
+                if (connected) {
+                    statusDot.className = 'status-dot connected';
+                    statusText.textContent = '已连接';
+                    deviceInfo.textContent = `设备: ${device.name || '未知设备'}`;
+
+                    messageInput.disabled = false;
+                    sendBtn.disabled = false;
+                    messageInput.focus();
+                } else {
+                    statusDot.className = 'status-dot';
+                    statusText.textContent = '未连接';
+                    deviceInfo.textContent = '设备: 无';
+
+                    messageInput.disabled = true;
+                    sendBtn.disabled = true;
+                }
+            }
+
+            onDisconnected() {
+                this.setConnected(false);
+                this.showNotification('设备已断开连接', 'error');
+            }
+
+            clearChat() {
+                const messagesContainer = document.getElementById('messagesContainer');
+                const initialMessage = messagesContainer.querySelector('.message');
+                messagesContainer.innerHTML = '';
+                messagesContainer.appendChild(initialMessage);
+                this.messages = [];
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            window.chatApp = new BluetoothChatApp();
+        });
+    </script>
+
+</body>
+
+</html>
